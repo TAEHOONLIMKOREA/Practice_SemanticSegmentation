@@ -5,6 +5,11 @@ __pycache__/
 
 # C extensions
 *.so
+*.zip
+
+instance-level-human-parsing.zip
+instance-level_human_parsing/
+ICCV15_fashion_dataset(ATR)/
 
 # Distribution / packaging
 .Python
