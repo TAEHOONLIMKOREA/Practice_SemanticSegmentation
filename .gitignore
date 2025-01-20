@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 *.zip
+*.h5
+saved_model/
 
 instance-level-human-parsing.zip
 instance-level_human_parsing/
