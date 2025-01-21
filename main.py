@@ -1,4 +1,4 @@
-from TrainMethods import data_generator, DeeplabV3
+from TrainMethods import data_generator, DeeplabV3, read_image
 from InferMethods import plot_predictions
 
 from scipy.io import loadmat
@@ -10,7 +10,7 @@ from tensorflow import keras
 import matplotlib.pyplot as plt
 import json
 
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 NUM_CLASSES = 20
 DATA_DIR = "./instance-level_human_parsing/instance-level_human_parsing/Training"
 NUM_TRAIN_IMAGES = 1000
@@ -34,9 +34,10 @@ def train(train_dataset, val_dataset):
     with strategy.scope():
         model = DeeplabV3(num_classes=NUM_CLASSES)
         model.summary()
+        print("Model output shape:", model.output_shape)
 
         loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001),
                       loss=loss,
                       metrics=['accuracy'])
         history = model.fit(train_dataset, validation_data=val_dataset, epochs=30)
@@ -106,16 +107,26 @@ def main():
     val_masks = sorted(glob(os.path.join(DATA_DIR, 'Category_ids/*')))[NUM_TRAIN_IMAGES:NUM_VAL_IMAGES+NUM_TRAIN_IMAGES]
 
     train_dataset = data_generator(train_images, train_masks, BATCH_SIZE)
-    val_dataset = data_generator(val_images, val_masks, BATCH_SIZE)    
+    val_dataset = data_generator(val_images, val_masks, BATCH_SIZE)
     
-    print("Train Dataset: ", train_dataset)
-    print("Val Dataset: ", val_dataset)    
+    test_mask_path = train_masks[0]
+    mask = read_image(test_mask_path, mask=True).numpy()
+    unique_values, counts = np.unique(mask, return_counts=True)
+    print("Unique mask values:", unique_values)
+    print("Counts:", counts)
+    
+
+    # # 각 마스크의 픽셀 값 분포 확인
+    # for mask_path in train_masks[:5]:
+    #     mask = read_image(mask_path, mask=True).numpy()
+    #     unique, counts = np.unique(mask, return_counts=True)
+    #     print(f"Mask pixel distribution: {dict(zip(unique, counts))}")
     
     # [2-1] 학습  
-    # model = train(train_dataset, val_dataset)
+    model = train(train_dataset, val_dataset)
     
-    # [2-2] 모델 불러오기
-    model = keras.models.load_model('my_model.h5')
+    # # [2-2] 모델 불러오기
+    # model = keras.models.load_model('my_model.h5')
 
     # [3] 추론 
     # 데이터셋과 함께 제공된 ./instance-level_human_parsing/instance-level_human_parsing/human_colormap.mat 파일을 통해 각 라벨에 대한 해당 색상을 찾을 수 있음
@@ -127,6 +138,8 @@ def main():
     print("Colormap values:", colormap[:NUM_CLASSES])
 
     plot_predictions(train_images[:4], colormap, model=model)
+    
+    
     
 
 if __name__ == '__main__':

@@ -17,13 +17,20 @@ def read_image(image_path, mask=False):
     if mask:
         image = tf.image.decode_png(image, channels=1)
         image.set_shape([None, None, 1])
-        image = tf.image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
+        # 세그멘테이션 마스크는 Nearest Neighbor로 리사이즈 권장(범주형 레이블 보존)
+        image = tf.image.resize(
+            images=image, 
+            size=[IMAGE_SIZE, IMAGE_SIZE],
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR
+        )
+        # 필요하면 정수형 캐스팅
+        image = tf.cast(image, tf.uint8)
     else:
         image = tf.image.decode_png(image, channels=3)
-        image.set_shape([None, None, 3]) #RGB
+        image.set_shape([None, None, 3])  # RGB
         image = tf.image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
-        image = image / 127.5 -1    # -1~ 1까지 정규화
-        
+        # -1 ~ 1 범위로 정규화
+        image = image / 127.5 - 1.0
     return image
 
 def load_data(image_list, mask_list):
